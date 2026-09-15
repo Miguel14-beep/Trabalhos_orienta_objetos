@@ -1,9 +1,17 @@
 package main;
 
+
+import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.GradientPaint;
 import java.awt.Graphics2D;
+import java.awt.RadialGradientPaint;
+import java.awt.RenderingHints;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 
 import entidade.Agua;
@@ -184,6 +192,7 @@ public class TelaBatalha implements MouseListener {
         // =====================================================
 
         birdmonInimigo = criarBirdmonAleatorio();
+        gp.pokedex.registrarVisto(birdmonInimigo);
 
         // =====================================================
         // LÓGICA DA BATALHA
@@ -308,7 +317,210 @@ public class TelaBatalha implements MouseListener {
     // DESENHAR BATALHA
     // =========================
 
+    // =========================
+    // AUXILIARES VISUAIS
+    // =========================
+
+    private Color corPorTipo(String tipo) {
+
+        if (tipo == null) {
+            return Color.GRAY;
+        }
+
+        switch (tipo) {
+            case "Fogo":
+                return new Color(255, 99, 71);
+            case "Agua":
+                return new Color(65, 149, 235);
+            case "Planta":
+                return new Color(102, 187, 106);
+            default:
+                return Color.GRAY;
+        }
+    }
+
+    private void desenharPainel(
+            Graphics2D g2,
+            int x, int y,
+            int largura, int altura) {
+
+        g2.setColor(new Color(0, 0, 0, 70));
+        g2.fill(new RoundRectangle2D.Float(
+                x + 4, y + 4, largura, altura, 20, 20));
+
+        GradientPaint gradiente = new GradientPaint(
+                x, y, Color.WHITE,
+                x, y + altura, new Color(230, 230, 230)
+        );
+
+        g2.setPaint(gradiente);
+        g2.fill(new RoundRectangle2D.Float(
+                x, y, largura, altura, 20, 20));
+        g2.setPaint(null);
+
+        g2.setColor(new Color(90, 90, 90));
+        g2.setStroke(new BasicStroke(2f));
+        g2.draw(new RoundRectangle2D.Float(
+                x, y, largura, altura, 20, 20));
+    }
+
+    private void desenharBarra(
+            Graphics2D g2,
+            int x, int y,
+            int largura, int altura,
+            int atual, int maximo,
+            boolean isVida) {
+
+        g2.setColor(new Color(210, 210, 210));
+        g2.fill(new RoundRectangle2D.Float(
+                x, y, largura, altura, altura, altura));
+
+        int larguraPreenchida =
+                calcularBarra(atual, maximo, largura);
+
+        Color corBarra;
+
+        if (isVida) {
+
+            double proporcao =
+                    maximo <= 0 ? 0 : (double) atual / maximo;
+
+            if (proporcao > 0.5) {
+                corBarra = new Color(76, 187, 23);
+            } else if (proporcao > 0.2) {
+                corBarra = new Color(240, 180, 20);
+            } else {
+                corBarra = new Color(220, 60, 60);
+            }
+
+        } else {
+            corBarra = new Color(60, 140, 230);
+        }
+
+        if (larguraPreenchida > 0) {
+
+            GradientPaint gradienteBarra = new GradientPaint(
+                    x, y, corBarra.brighter(),
+                    x, y + altura, corBarra
+            );
+
+            g2.setPaint(gradienteBarra);
+            g2.fill(new RoundRectangle2D.Float(
+                    x, y, larguraPreenchida, altura, altura, altura));
+            g2.setPaint(null);
+        }
+
+        g2.setColor(corBarra.darker());
+        g2.setStroke(new BasicStroke(1.2f));
+        g2.draw(new RoundRectangle2D.Float(
+                x, y, largura, altura, altura, altura));
+    }
+
+    private void desenharCriatura(
+            Graphics2D g2,
+            int x, int y,
+            int diametro,
+            String tipo) {
+
+        Color corBase = corPorTipo(tipo);
+        Color corClara = corBase.brighter();
+
+        RadialGradientPaint gradiente = new RadialGradientPaint(
+                x + diametro / 3f, y + diametro / 3f, diametro,
+                new float[] {0f, 1f},
+                new Color[] {corClara, corBase}
+        );
+
+        g2.setPaint(gradiente);
+        g2.fillOval(x, y, diametro, diametro);
+        g2.setPaint(null);
+
+        g2.setColor(corBase.darker());
+        g2.setStroke(new BasicStroke(3f));
+        g2.drawOval(x, y, diametro, diametro);
+
+        g2.setColor(new Color(255, 255, 255, 120));
+        g2.fillOval(
+                x + diametro / 5,
+                y + diametro / 6,
+                diametro / 4,
+                diametro / 5
+        );
+    }
+
+    private void desenharBotao(
+            Graphics2D g2,
+            int x, int y,
+            int largura, int altura,
+            String texto,
+            Color corBase,
+            int tamanhoFonte) {
+
+        g2.setColor(new Color(0, 0, 0, 60));
+        g2.fill(new RoundRectangle2D.Float(
+                x + 3, y + 3, largura, altura, 16, 16));
+
+        GradientPaint gradiente = new GradientPaint(
+                x, y, corBase.brighter(),
+                x, y + altura, corBase
+        );
+
+        g2.setPaint(gradiente);
+        g2.fill(new RoundRectangle2D.Float(
+                x, y, largura, altura, 16, 16));
+        g2.setPaint(null);
+
+        g2.setColor(corBase.darker());
+        g2.setStroke(new BasicStroke(2f));
+        g2.draw(new RoundRectangle2D.Float(
+                x, y, largura, altura, 16, 16));
+
+        g2.setFont(new Font("SansSerif", Font.BOLD, tamanhoFonte));
+        FontMetrics fm = g2.getFontMetrics();
+
+        int textoX = x + (largura - fm.stringWidth(texto)) / 2;
+        int textoY = y + (altura + fm.getAscent()) / 2 - 3;
+
+        g2.setColor(new Color(0, 0, 0, 150));
+        g2.drawString(texto, textoX + 1, textoY + 1);
+
+        g2.setColor(Color.WHITE);
+        g2.drawString(texto, textoX, textoY);
+    }
+
+    private void desenharBotao(
+            Graphics2D g2,
+            int x, int y,
+            int largura, int altura,
+            String texto,
+            Color corBase) {
+
+        desenharBotao(g2, x, y, largura, altura, texto, corBase, 14);
+    }
+
+    private String obterNomeHabilidade(int indice) {
+
+        if (birdmonJogador.habilidades != null
+                && birdmonJogador.habilidades.length > indice
+                && birdmonJogador.habilidades[indice] != null) {
+
+            return birdmonJogador.habilidades[indice].nome;
+        }
+
+        return "---";
+    }
+    
     public void draw(Graphics2D g2) {
+
+    	g2.setRenderingHint(
+                RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON
+        );
+
+        g2.setRenderingHint(
+                RenderingHints.KEY_TEXT_ANTIALIASING,
+                RenderingHints.VALUE_TEXT_ANTIALIAS_ON
+        );
 
         if (birdmonJogador == null
                 || birdmonInimigo == null) {
@@ -351,107 +563,90 @@ public class TelaBatalha implements MouseListener {
 
     private void desenharMenuPokemon(Graphics2D g2) {
 
-        g2.setColor(Color.WHITE);
+        desenharPainel(g2, 50, 50, 670, 350);
 
-        g2.fillRect(
-                50,
-                50,
-                670,
-                350
-        );
-
-        g2.setColor(Color.BLACK);
-
-        g2.drawString(
-                "EQUIPE",
-                80,
-                80
-        );
+        g2.setColor(new Color(40, 40, 40));
+        g2.setFont(new Font("SansSerif", Font.BOLD, 18));
+        g2.drawString("EQUIPE", 80, 85);
 
         int x = 80;
         int y = 100;
         int largura = 280;
         int altura = 60;
-        int espacamento = 10;
+        int espacamentoLocal = 10;
 
-        // Mostra sempre as 6 posições possíveis.
         for (int i = 0; i < 6; i++) {
 
             int posX;
             int posY;
 
             if (i < 3) {
-
                 posX = x;
-                posY = y + i * (altura + espacamento);
-
+                posY = y + i * (altura + espacamentoLocal);
             } else {
-
                 posX = x + 320;
-                posY = y + (i - 3) * (altura + espacamento);
+                posY = y + (i - 3) * (altura + espacamentoLocal);
             }
 
-            g2.setColor(Color.LIGHT_GRAY);
+            boolean vazio = i >= equipeJogador.size();
 
-            g2.fillRect(
-                    posX,
-                    posY,
-                    largura,
-                    altura
+            Color corSlot = vazio
+                    ? new Color(225, 225, 225)
+                    : new Color(255, 250, 235);
+
+            GradientPaint gradiente = new GradientPaint(
+                    posX, posY, corSlot.brighter(),
+                    posX, posY + altura, corSlot
             );
 
-            g2.setColor(Color.BLACK);
+            g2.setPaint(gradiente);
+            g2.fill(new RoundRectangle2D.Float(
+                    posX, posY, largura, altura, 14, 14));
+            g2.setPaint(null);
 
-            if (i < equipeJogador.size()) {
+            g2.setColor(new Color(150, 150, 150));
+            g2.setStroke(new BasicStroke(1.5f));
+            g2.draw(new RoundRectangle2D.Float(
+                    posX, posY, largura, altura, 14, 14));
 
-                Birdmon birdmon =
-                        equipeJogador.get(i);
+            if (!vazio) {
 
+                Birdmon birdmon = equipeJogador.get(i);
+
+                g2.setColor(new Color(40, 40, 40));
+                g2.setFont(new Font("SansSerif", Font.BOLD, 14));
                 g2.drawString(
-                        birdmon.getNome()
-                                + "  Lv."
-                                + birdmon.getNivel(),
-                        posX + 10,
-                        posY + 20
+                        birdmon.getNome() + "  Lv." + birdmon.getNivel(),
+                        posX + 12, posY + 22
                 );
 
-                g2.drawString(
-                        "HP "
-                                + birdmon.getVida()
-                                + "/"
-                                + birdmon.getVidaMaxima(),
-                        posX + 10,
-                        posY + 40
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
+                g2.drawString("HP", posX + 12, posY + 38);
+
+                desenharBarra(
+                        g2, posX + 35, posY + 30, largura - 50, 10,
+                        birdmon.getVida(), birdmon.getVidaMaxima(), true
                 );
+
+                if (birdmon == birdmonJogador) {
+                    g2.setColor(new Color(70, 140, 220));
+                    g2.setFont(new Font("SansSerif", Font.ITALIC, 11));
+                    g2.drawString("Em batalha", posX + 12, posY + 55);
+                } else if (birdmon.estaDerrotado()) {
+                    g2.setColor(new Color(200, 60, 60));
+                    g2.setFont(new Font("SansSerif", Font.ITALIC, 11));
+                    g2.drawString("Desmaiado", posX + 12, posY + 55);
+                }
 
             } else {
 
-                g2.drawString(
-                        "---",
-                        posX + 10,
-                        posY + 30
-                );
+                g2.setColor(new Color(160, 160, 160));
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 13));
+                g2.drawString("--- vazio ---", posX + 12, posY + 34);
             }
         }
 
-        // BOTÃO VOLTAR
-
-        g2.setColor(Color.WHITE);
-
-        g2.fillRect(
-                580,
-                360,
-                100,
-                40
-        );
-
-        g2.setColor(Color.BLACK);
-
-        g2.drawString(
-                "VOLTAR",
-                600,
-                385
-        );
+        desenharBotao(g2, 580, 360, 100, 40, "VOLTAR", new Color(120, 120, 120));
     }
 
     // =========================
@@ -460,28 +655,17 @@ public class TelaBatalha implements MouseListener {
 
     private void desenharMenuMochila(Graphics2D g2) {
 
-        g2.setColor(Color.WHITE);
+        desenharPainel(g2, 50, 50, 670, 350);
 
-        g2.fillRect(
-                50,
-                50,
-                670,
-                350
-        );
-
-        g2.setColor(Color.BLACK);
-
-        g2.drawString(
-                "MOCHILA",
-                80,
-                80
-        );
+        g2.setColor(new Color(40, 40, 40));
+        g2.setFont(new Font("SansSerif", Font.BOLD, 18));
+        g2.drawString("MOCHILA", 80, 85);
 
         int x = 80;
         int y = 100;
         int largura = 400;
         int altura = 40;
-        int espacamento = 10;
+        int espacamentoLocal = 10;
 
         int maxItensNaTela = 5;
 
@@ -491,90 +675,36 @@ public class TelaBatalha implements MouseListener {
 
             if (index < inventario.size()) {
 
-                Item item =
-                        inventario.get(index);
+                Item item = inventario.get(index);
+                int posY = y + i * (altura + espacamentoLocal);
 
-                int posY =
-                        y + i * (altura + espacamento);
-
-                g2.setColor(Color.LIGHT_GRAY);
-
-                g2.fillRect(
-                        x,
-                        posY,
-                        largura,
-                        altura
+                GradientPaint gradiente = new GradientPaint(
+                        x, posY, new Color(255, 250, 230),
+                        x, posY + altura, new Color(240, 225, 190)
                 );
 
-                g2.setColor(Color.BLACK);
+                g2.setPaint(gradiente);
+                g2.fill(new RoundRectangle2D.Float(
+                        x, posY, largura, altura, 12, 12));
+                g2.setPaint(null);
 
+                g2.setColor(new Color(170, 140, 90));
+                g2.setStroke(new BasicStroke(1.2f));
+                g2.draw(new RoundRectangle2D.Float(
+                        x, posY, largura, altura, 12, 12));
+
+                g2.setColor(new Color(50, 40, 20));
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 14));
                 g2.drawString(
-                        item.getNome()
-                                + " (x"
-                                + item.getQuantidade()
-                                + ")",
-                        x + 10,
-                        posY + 25
+                        item.getNome() + " (x" + item.getQuantidade() + ")",
+                        x + 14, posY + 25
                 );
             }
         }
 
-        // CIMA
-
-        g2.setColor(Color.LIGHT_GRAY);
-
-        g2.fillRect(
-                500,
-                100,
-                80,
-                40
-        );
-
-        g2.setColor(Color.BLACK);
-
-        g2.drawString(
-                "CIMA",
-                520,
-                125
-        );
-
-        // BAIXO
-
-        g2.setColor(Color.LIGHT_GRAY);
-
-        g2.fillRect(
-                500,
-                310,
-                80,
-                40
-        );
-
-        g2.setColor(Color.BLACK);
-
-        g2.drawString(
-                "BAIXO",
-                515,
-                335
-        );
-
-        // VOLTAR
-
-        g2.setColor(Color.WHITE);
-
-        g2.fillRect(
-                580,
-                360,
-                100,
-                40
-        );
-
-        g2.setColor(Color.BLACK);
-
-        g2.drawString(
-                "VOLTAR",
-                600,
-                385
-        );
+        desenharBotao(g2, 500, 100, 80, 40, "CIMA", new Color(120, 120, 120), 12);
+        desenharBotao(g2, 500, 310, 80, 40, "BAIXO", new Color(120, 120, 120), 12);
+        desenharBotao(g2, 580, 360, 100, 40, "VOLTAR", new Color(120, 120, 120));
     }
 
     // =========================
@@ -583,14 +713,14 @@ public class TelaBatalha implements MouseListener {
 
     private void desenharFundo(Graphics2D g2) {
 
-        g2.setColor(Color.GREEN);
-
-        g2.fillRect(
-                0,
-                0,
-                gp.larguraTela,
-                gp.comprimentoTela
+        GradientPaint ceu = new GradientPaint(
+                0, 0, new Color(135, 206, 250),
+                0, gp.comprimentoTela, new Color(152, 251, 152)
         );
+
+        g2.setPaint(ceu);
+        g2.fillRect(0, 0, gp.larguraTela, gp.comprimentoTela);
+        g2.setPaint(null);
     }
 
     // =========================
@@ -599,21 +729,31 @@ public class TelaBatalha implements MouseListener {
 
     private void desenharCampos(Graphics2D g2) {
 
-        g2.setColor(Color.WHITE);
+        desenharSombraCampo(g2, 400, 100, 250, 100);
+        desenharSombraCampo(g2, 100, 300, 250, 100);
+    }
 
-        g2.fillOval(
-                400,
-                100,
-                250,
-                100
+    private void desenharSombraCampo(
+            Graphics2D g2,
+            int x, int y,
+            int largura, int altura) {
+
+        RadialGradientPaint gradiente = new RadialGradientPaint(
+                x + largura / 2f, y + altura / 2f, largura / 2f,
+                new float[] {0f, 1f},
+                new Color[] {
+                        new Color(255, 255, 255, 190),
+                        new Color(255, 255, 255, 70)
+                }
         );
 
-        g2.fillOval(
-                100,
-                300,
-                250,
-                100
-        );
+        g2.setPaint(gradiente);
+        g2.fillOval(x, y, largura, altura);
+        g2.setPaint(null);
+
+        g2.setColor(new Color(0, 100, 0, 100));
+        g2.setStroke(new BasicStroke(2f));
+        g2.drawOval(x, y, largura, altura);
     }
 
     // =========================
@@ -622,26 +762,20 @@ public class TelaBatalha implements MouseListener {
 
     private void desenharBirdmons(Graphics2D g2) {
 
-        // Inimigo
+        g2.setColor(new Color(0, 0, 0, 60));
+        g2.fillOval(485, 155, 70, 18);
 
-        g2.setColor(Color.RED);
-
-        g2.fillOval(
-                480,
-                80,
-                80,
-                80
+        desenharCriatura(
+                g2, 480, 80, 80,
+                birdmonInimigo != null ? birdmonInimigo.getTipo() : null
         );
 
-        // Jogador
+        g2.setColor(new Color(0, 0, 0, 60));
+        g2.fillOval(185, 355, 70, 18);
 
-        g2.setColor(Color.BLUE);
-
-        g2.fillOval(
-                180,
-                280,
-                80,
-                80
+        desenharCriatura(
+                g2, 180, 280, 80,
+                birdmonJogador != null ? birdmonJogador.getTipo() : null
         );
     }
 
@@ -649,63 +783,37 @@ public class TelaBatalha implements MouseListener {
     // INFORMAÇÕES DO INIMIGO
     // =========================
 
-    private void desenharInformacoesInimigo(
-            Graphics2D g2) {
+    private void desenharInformacoesInimigo(Graphics2D g2) {
 
         int x = 50;
         int y = 50;
         int largura = 250;
         int altura = 80;
 
-        g2.setColor(Color.WHITE);
+        desenharPainel(g2, x, y, largura, altura);
 
-        g2.fillRect(
-                x,
-                y,
-                largura,
-                altura
-        );
-
-        g2.setColor(Color.BLACK);
-
+        g2.setColor(new Color(40, 40, 40));
+        g2.setFont(new Font("SansSerif", Font.BOLD, 16));
         g2.drawString(
-                birdmonInimigo.getNome()
-                        + "  Lv."
-                        + birdmonInimigo.getNivel(),
-                x + 10,
-                y + 20
+                birdmonInimigo.getNome() + "  Lv." + birdmonInimigo.getNivel(),
+                x + 12, y + 22
         );
 
-        int larguraHP =
-                calcularBarra(
-                        birdmonInimigo.getVida(),
-                        birdmonInimigo.getVidaMaxima(),
-                        180
-                );
+        g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        g2.setColor(new Color(90, 90, 90));
+        g2.drawString("HP", x + 12, y + 40);
 
-        g2.setColor(Color.RED);
-
-        g2.fillRect(
-                x + 10,
-                y + 35,
-                larguraHP,
-                10
+        desenharBarra(
+                g2, x + 35, y + 32, 180, 10,
+                birdmonInimigo.getVida(), birdmonInimigo.getVidaMaxima(), true
         );
 
-        int larguraPH =
-                calcularBarra(
-                        birdmonInimigo.getPh(),
-                        birdmonInimigo.getPhMaximo(),
-                        180
-                );
+        g2.setColor(new Color(90, 90, 90));
+        g2.drawString("PH", x + 12, y + 62);
 
-        g2.setColor(Color.BLUE);
-
-        g2.fillRect(
-                x + 10,
-                y + 55,
-                larguraPH,
-                10
+        desenharBarra(
+                g2, x + 35, y + 54, 180, 10,
+                birdmonInimigo.getPh(), birdmonInimigo.getPhMaximo(), false
         );
     }
 
@@ -713,63 +821,37 @@ public class TelaBatalha implements MouseListener {
     // INFORMAÇÕES DO JOGADOR
     // =========================
 
-    private void desenharInformacoesJogador(
-            Graphics2D g2) {
+    private void desenharInformacoesJogador(Graphics2D g2) {
 
         int x = 400;
         int y = 300;
         int largura = 250;
         int altura = 80;
 
-        g2.setColor(Color.WHITE);
+        desenharPainel(g2, x, y, largura, altura);
 
-        g2.fillRect(
-                x,
-                y,
-                largura,
-                altura
-        );
-
-        g2.setColor(Color.BLACK);
-
+        g2.setColor(new Color(40, 40, 40));
+        g2.setFont(new Font("SansSerif", Font.BOLD, 16));
         g2.drawString(
-                birdmonJogador.getNome()
-                        + "  Lv."
-                        + birdmonJogador.getNivel(),
-                x + 10,
-                y + 20
+                birdmonJogador.getNome() + "  Lv." + birdmonJogador.getNivel(),
+                x + 12, y + 22
         );
 
-        int larguraHP =
-                calcularBarra(
-                        birdmonJogador.getVida(),
-                        birdmonJogador.getVidaMaxima(),
-                        180
-                );
+        g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        g2.setColor(new Color(90, 90, 90));
+        g2.drawString("HP", x + 12, y + 40);
 
-        g2.setColor(Color.RED);
-
-        g2.fillRect(
-                x + 10,
-                y + 35,
-                larguraHP,
-                10
+        desenharBarra(
+                g2, x + 35, y + 32, 180, 10,
+                birdmonJogador.getVida(), birdmonJogador.getVidaMaxima(), true
         );
 
-        int larguraPH =
-                calcularBarra(
-                        birdmonJogador.getPh(),
-                        birdmonJogador.getPhMaximo(),
-                        180
-                );
+        g2.setColor(new Color(90, 90, 90));
+        g2.drawString("PH", x + 12, y + 62);
 
-        g2.setColor(Color.BLUE);
-
-        g2.fillRect(
-                x + 10,
-                y + 55,
-                larguraPH,
-                10
+        desenharBarra(
+                g2, x + 35, y + 54, 180, 10,
+                birdmonJogador.getPh(), birdmonJogador.getPhMaximo(), false
         );
     }
 
@@ -784,22 +866,11 @@ public class TelaBatalha implements MouseListener {
         int largura = 360;
         int altura = 100;
 
-        g2.setColor(Color.WHITE);
+        desenharPainel(g2, x, y, largura, altura);
 
-        g2.fillRect(
-                x,
-                y,
-                largura,
-                altura
-        );
-
-        g2.setColor(Color.BLACK);
-
-        g2.drawString(
-                mensagemBatalha,
-                x + 15,
-                y + 30
-        );
+        g2.setColor(new Color(40, 40, 40));
+        g2.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        g2.drawString(mensagemBatalha, x + 18, y + 35);
     }
 
     // =========================
@@ -808,80 +879,28 @@ public class TelaBatalha implements MouseListener {
 
     private void desenharBotoes(Graphics2D g2) {
 
-        g2.setColor(Color.WHITE);
-
-        // LUTAR
-
-        g2.fillRect(
-                botaoX,
-                botaoY,
-                botaoLargura,
-                botaoAltura
+        desenharBotao(
+                g2, botaoX, botaoY, botaoLargura, botaoAltura,
+                "LUTAR", new Color(220, 90, 70)
         );
 
-        // POKEMON
+        desenharBotao(
+                g2, botaoX, botaoY + botaoAltura + espacamento,
+                botaoLargura, botaoAltura,
+                "POKEMON", new Color(70, 140, 220)
+        );
 
-        g2.fillRect(
-                botaoX,
+        desenharBotao(
+                g2, botaoX + botaoLargura + espacamento, botaoY,
+                botaoLargura, botaoAltura,
+                "MOCHILA", new Color(200, 160, 60)
+        );
+
+        desenharBotao(
+                g2, botaoX + botaoLargura + espacamento,
                 botaoY + botaoAltura + espacamento,
-                botaoLargura,
-                botaoAltura
-        );
-
-        // MOCHILA
-
-        g2.fillRect(
-                botaoX + botaoLargura + espacamento,
-                botaoY,
-                botaoLargura,
-                botaoAltura
-        );
-
-        // FUGIR
-
-        g2.fillRect(
-                botaoX + botaoLargura + espacamento,
-                botaoY + botaoAltura + espacamento,
-                botaoLargura,
-                botaoAltura
-        );
-
-        g2.setColor(Color.BLACK);
-
-        g2.drawString(
-                "LUTAR",
-                botaoX + 35,
-                botaoY + 25
-        );
-
-        g2.drawString(
-                "POKEMON",
-                botaoX + 25,
-                botaoY
-                        + botaoAltura
-                        + espacamento
-                        + 25
-        );
-
-        g2.drawString(
-                "MOCHILA",
-                botaoX
-                        + botaoLargura
-                        + espacamento
-                        + 25,
-                botaoY + 25
-        );
-
-        g2.drawString(
-                "FUGIR",
-                botaoX
-                        + botaoLargura
-                        + espacamento
-                        + 35,
-                botaoY
-                        + botaoAltura
-                        + espacamento
-                        + 25
+                botaoLargura, botaoAltura,
+                "FUGIR", new Color(120, 120, 120)
         );
     }
 
@@ -891,120 +910,33 @@ public class TelaBatalha implements MouseListener {
 
     private void desenharMenuLuta(Graphics2D g2) {
 
-        g2.setColor(Color.WHITE);
-
-        // ATAQUE
-
-        g2.fillRect(
-                botaoX,
-                botaoY,
-                botaoLargura,
-                botaoAltura
+        desenharBotao(
+                g2, botaoX, botaoY, botaoLargura, botaoAltura,
+                "ATAQUE", new Color(220, 90, 70)
         );
 
-        // HABILIDADE 1
+        desenharBotao(
+                g2, botaoX, botaoY + botaoAltura + espacamento,
+                botaoLargura, botaoAltura,
+                obterNomeHabilidade(0), new Color(150, 90, 200), 12
+        );
 
-        g2.fillRect(
-                botaoX,
+        desenharBotao(
+                g2, botaoX + botaoLargura + espacamento, botaoY,
+                botaoLargura, botaoAltura,
+                obterNomeHabilidade(1), new Color(150, 90, 200), 12
+        );
+
+        desenharBotao(
+                g2, botaoX + botaoLargura + espacamento,
                 botaoY + botaoAltura + espacamento,
-                botaoLargura,
-                botaoAltura
+                botaoLargura, botaoAltura,
+                obterNomeHabilidade(2), new Color(150, 90, 200), 12
         );
 
-        // HABILIDADE 2
-
-        g2.fillRect(
-                botaoX + botaoLargura + espacamento,
-                botaoY,
-                botaoLargura,
-                botaoAltura
-        );
-
-        // HABILIDADE 3
-
-        g2.fillRect(
-                botaoX + botaoLargura + espacamento,
-                botaoY + botaoAltura + espacamento,
-                botaoLargura,
-                botaoAltura
-        );
-
-        g2.setColor(Color.BLACK);
-
-        g2.drawString(
-                "ATAQUE",
-                botaoX + 30,
-                botaoY + 25
-        );
-
-        // HABILIDADE 1
-
-        if (birdmonJogador.habilidades != null
-                && birdmonJogador.habilidades.length > 0
-                && birdmonJogador.habilidades[0] != null) {
-
-            g2.drawString(
-                    birdmonJogador.habilidades[0].nome,
-                    botaoX + 15,
-                    botaoY
-                            + botaoAltura
-                            + espacamento
-                            + 25
-            );
-        }
-
-        // HABILIDADE 2
-
-        if (birdmonJogador.habilidades != null
-                && birdmonJogador.habilidades.length > 1
-                && birdmonJogador.habilidades[1] != null) {
-
-            g2.drawString(
-                    birdmonJogador.habilidades[1].nome,
-                    botaoX
-                            + botaoLargura
-                            + espacamento
-                            + 15,
-                    botaoY + 25
-            );
-        }
-
-        // HABILIDADE 3
-
-        if (birdmonJogador.habilidades != null
-                && birdmonJogador.habilidades.length > 2
-                && birdmonJogador.habilidades[2] != null) {
-
-            g2.drawString(
-                    birdmonJogador.habilidades[2].nome,
-                    botaoX
-                            + botaoLargura
-                            + espacamento
-                            + 15,
-                    botaoY
-                            + botaoAltura
-                            + espacamento
-                            + 25
-            );
-        }
-
-        // VOLTAR
-
-        g2.setColor(Color.WHITE);
-
-        g2.fillRect(
-                botaoX - 100,
-                botaoY,
-                80,
-                botaoAltura
-        );
-
-        g2.setColor(Color.BLACK);
-
-        g2.drawString(
-                "VOLTAR",
-                botaoX - 85,
-                botaoY + 25
+        desenharBotao(
+                g2, botaoX - 100, botaoY, 80, botaoAltura,
+                "VOLTAR", new Color(120, 120, 120)
         );
     }
 
@@ -1214,11 +1146,10 @@ public class TelaBatalha implements MouseListener {
             // CAPTURA BEM-SUCEDIDA
             // =================================================
 
-            if (logicaBatalha
-                    .foiUltimaCapturaBemSucedida()) {
+            if (logicaBatalha.foiUltimaCapturaBemSucedida()) {
 
-                Birdmon capturado =
-                        logicaBatalha.getAdversario();
+                Birdmon capturado = logicaBatalha.getAdversario();
+                gp.pokedex.registrarCapturado(capturado);
 
                 if (equipeJogador.size() < 6) {
 

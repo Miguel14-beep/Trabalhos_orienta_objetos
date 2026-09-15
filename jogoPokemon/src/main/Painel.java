@@ -29,6 +29,7 @@ public class Painel extends JPanel implements Runnable {
     Thread gameThread;
 
     public ColisaoChecker cChecker = new ColisaoChecker(this);
+    public Pokedex pokedex = new Pokedex();
 
     Jogador jogador = new Jogador(this, keyH);
 
