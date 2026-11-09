@@ -1,0 +1,7 @@
+
+CREATE TABLE IF NOT EXISTS mensagens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    remetente TEXT NOT NULL,
+    conteudo TEXT NOT NULL,
+    horario TEXT NOT NULL
+);

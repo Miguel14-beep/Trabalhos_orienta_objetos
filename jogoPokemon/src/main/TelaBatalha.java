@@ -45,6 +45,7 @@ public class TelaBatalha implements MouseListener {
     IACombate iaCombate;
 
     String mensagemBatalha = "O que você vai fazer?";
+    private static final int TOTAL_ESPECIES_SELVAGENS = 3;
 
     // =========================
     // BOTÕES
@@ -1173,6 +1174,15 @@ public class TelaBatalha implements MouseListener {
                 menuPokemon = false;
                 menuMochila = false;
 
+                // >>> ADICIONAR ESTE BLOCO
+                if (gp.pokedex.totalCapturados()
+                        >= TOTAL_ESPECIES_SELVAGENS) {
+
+                    gp.ativarVitoria();
+
+                    return;
+                }
+
                 gp.fugirBatalha();
 
                 return;
@@ -1244,19 +1254,24 @@ public class TelaBatalha implements MouseListener {
 
     private void verificarFimBatalha() {
 
-        if (birdmonInimigo != null
-                && birdmonInimigo.estaDerrotado()) {
+        if (birdmonJogador != null
+                && birdmonJogador.estaDerrotado()) {
 
             mensagemBatalha =
-                    birdmonInimigo.getNome()
+                    birdmonJogador.getNome()
                             + " foi derrotado!";
 
             menuLuta = false;
             menuPokemon = false;
             menuMochila = false;
 
-            return;
+            
+            if (encontrarPrimeiroBirdmonDisponivel() == null) {
+
+                gp.ativarGameOver();
+            }
         }
+    
 
         if (birdmonJogador != null
                 && birdmonJogador.estaDerrotado()) {

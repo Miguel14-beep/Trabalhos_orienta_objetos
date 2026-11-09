@@ -34,6 +34,13 @@ public class Painel extends JPanel implements Runnable {
     Jogador jogador = new Jogador(this, keyH);
 
     TelaBatalha telaBatalha;
+    HistoricoPartidas historico = new HistoricoPartidas();
+    TelaHistorico telaHistorico;
+    public boolean emHistorico = false;
+    long tempoInicioPartida = System.currentTimeMillis();
+    TelaFim telaFim;
+    public boolean emGameOver = false;
+    public boolean emVitoria = false;
 
     public boolean emBatalha = false;
     int xAntesDaBatalha;
@@ -53,6 +60,12 @@ public class Painel extends JPanel implements Runnable {
 
         telaBatalha = new TelaBatalha(this);
         this.addMouseListener(telaBatalha);
+        
+        telaFim = new TelaFim(this);
+        this.addMouseListener(telaFim);
+        
+        telaHistorico = new TelaHistorico(this);
+        this.addMouseListener(telaHistorico);
     }
 
     public void startGameThread() {
@@ -103,7 +116,7 @@ public class Painel extends JPanel implements Runnable {
 
     public void update() {
 
-        if (!emBatalha) {
+        if (!emBatalha && !emGameOver && !emVitoria && !emHistorico) {
             jogador.update();
         }
     }
@@ -138,7 +151,19 @@ public class Painel extends JPanel implements Runnable {
 
         Graphics2D g2 = (Graphics2D) g;
 
-        if (emBatalha) {
+        if (emHistorico) {
+
+            telaHistorico.draw(g2);
+
+        } else if (emGameOver) {
+
+            telaFim.drawGameOver(g2);
+
+        } else if (emVitoria) {
+
+            telaFim.drawVitoria(g2);
+
+        } else if (emBatalha) {
 
             telaBatalha.draw(g2);
 
@@ -149,5 +174,51 @@ public class Painel extends JPanel implements Runnable {
         }
 
         g2.dispose();
+    }
+    
+    public void ativarGameOver() {
+
+        emGameOver = true;
+        emBatalha = false;
+        
+        long duracao = (System.currentTimeMillis() - tempoInicioPartida) / 1000;
+        historico.registrarDerrota(pokedex.totalCapturados(), duracao);
+
+        System.out.println("GAME OVER!");
+
+        repaint();
+    }
+
+    public void ativarVitoria() {
+
+        emVitoria = true;
+        emBatalha = false;
+        
+        long duracao = (System.currentTimeMillis() - tempoInicioPartida) / 1000;
+        historico.registrarVitoria(pokedex.totalCapturados(), duracao);
+
+        System.out.println("VITÓRIA!");
+
+        repaint();
+    }
+
+    public void reiniciarJogo() {
+
+        emGameOver = false;
+        emVitoria = false;
+        emBatalha = false;
+
+        this.removeMouseListener(telaBatalha);
+        telaBatalha = new TelaBatalha(this);
+        this.addMouseListener(telaBatalha);
+
+        pokedex = new Pokedex();
+        tempoInicioPartida = System.currentTimeMillis();
+
+        jogador.x = 100;
+        jogador.y = 100;
+        jogador.direcao = "down";
+
+        repaint();
     }
 }
